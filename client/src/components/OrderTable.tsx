@@ -1,0 +1,141 @@
+import React from 'react';
+
+export type OrderStatus = 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'CANCELLED';
+
+export interface Order {
+  id: string;
+  customer_name: string;
+  sku: string;
+  product_name: string;
+  quantity: number;
+  status: OrderStatus;
+  created_at: string;
+}
+
+interface OrderTableProps {
+  orders: Order[];
+  onStatusChange: (orderId: string, newStatus: OrderStatus) => Promise<void>;
+}
+
+const STATUS_STYLES: Record<OrderStatus, string> = {
+  PENDING: 'bg-amber-50 text-amber-800 ring-1 ring-inset ring-amber-600/20',
+  PROCESSING: 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-700/10',
+  SHIPPED: 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/20',
+  CANCELLED: 'bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-500/10',
+};
+
+const ALL_STATUSES: OrderStatus[] = ['PENDING', 'PROCESSING', 'SHIPPED', 'CANCELLED'];
+
+export const OrderTable: React.FC<OrderTableProps> = ({ orders, onStatusChange }) => {
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+        <div>
+          <h2 className="text-base font-semibold text-slate-900">Active Fulfillment Queue</h2>
+          <p className="text-sm text-slate-500">
+            Real-time retail order triage and fulfillment status controls
+          </p>
+        </div>
+        <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+          {orders.length} {orders.length === 1 ? 'order' : 'orders'}
+        </span>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-slate-200">
+          <thead className="bg-slate-50">
+            <tr>
+              <th
+                scope="col"
+                className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500"
+              >
+                Order ID
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500"
+              >
+                Customer
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500"
+              >
+                Product
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500"
+              >
+                Quantity
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500"
+              >
+                Status
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3.5 text-right text-xs font-semibold uppercase tracking-wider text-slate-500"
+              >
+                Update Status
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-200 bg-white">
+            {orders.map((order) => (
+              <tr key={order.id} className="hover:bg-slate-50/80 transition-colors">
+                <td className="whitespace-nowrap px-6 py-4 text-sm font-mono font-semibold text-slate-900">
+                  {order.id}
+                </td>
+                <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-slate-800">
+                  {order.customer_name}
+                </td>
+                <td className="px-6 py-4 text-sm text-slate-700">
+                  <div className="flex flex-col">
+                    <span className="font-medium text-slate-900">{order.product_name}</span>
+                    <span className="text-xs font-mono text-slate-500">{order.sku}</span>
+                  </div>
+                </td>
+                <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-slate-700">
+                  {order.quantity}
+                </td>
+                <td className="whitespace-nowrap px-6 py-4 text-sm">
+                  <span
+                    className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-semibold ${
+                      STATUS_STYLES[order.status] ?? STATUS_STYLES.PENDING
+                    }`}
+                  >
+                    {order.status}
+                  </span>
+                </td>
+                <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
+                  <select
+                    aria-label={`Change status for ${order.id}`}
+                    value={order.status}
+                    onChange={(e) => onStatusChange(order.id, e.target.value as OrderStatus)}
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:border-slate-400 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20"
+                  >
+                    {ALL_STATUSES.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+              </tr>
+            ))}
+            {orders.length === 0 && (
+              <tr>
+                <td colSpan={6} className="px-6 py-10 text-center text-sm text-slate-500">
+                  No orders found in fulfillment queue.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
