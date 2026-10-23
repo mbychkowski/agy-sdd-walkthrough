@@ -1,0 +1,11 @@
+{
+  "fast-test-gate": {
+    "Stop": [
+      {
+        "type": "command",
+        "command": "bash \"$(git rev-parse --show-toplevel)/.agents/hooks/verify.sh\"",
+        "timeout": 15
+      }
+    ]
+  }
+}

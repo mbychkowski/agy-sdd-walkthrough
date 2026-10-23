@@ -16,6 +16,8 @@ export interface Order {
 
 interface OrderTableProps {
   orders: Order[];
+  selectedOrderIds?: string[];
+  onToggleSelectOrder?: (orderId: string) => void;
   onStatusChange: (orderId: string, newStatus: OrderStatus) => Promise<void>;
   onCancelOrder: (orderId: string) => Promise<void>;
 }
@@ -31,6 +33,8 @@ const ALL_STATUSES: OrderStatus[] = ['PENDING', 'PROCESSING', 'SHIPPED', 'CANCEL
 
 export const OrderTable: React.FC<OrderTableProps> = ({
   orders,
+  selectedOrderIds = [],
+  onToggleSelectOrder,
   onStatusChange,
   onCancelOrder,
 }) => {
@@ -52,6 +56,11 @@ export const OrderTable: React.FC<OrderTableProps> = ({
         <table className="min-w-full divide-y divide-slate-200">
           <thead className="bg-slate-50">
             <tr>
+              {onToggleSelectOrder && (
+                <th scope="col" className="w-10 px-4 py-3.5 text-left">
+                  <span className="sr-only">Select</span>
+                </th>
+              )}
               <th
                 scope="col"
                 className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500"
@@ -93,6 +102,17 @@ export const OrderTable: React.FC<OrderTableProps> = ({
           <tbody className="divide-y divide-slate-200 bg-white">
             {orders.map((order) => (
               <tr key={order.id} className="hover:bg-slate-50/80 transition-colors">
+                {onToggleSelectOrder && (
+                  <td className="px-4 py-4">
+                    <input
+                      type="checkbox"
+                      aria-label={`Select ${order.id}`}
+                      checked={selectedOrderIds.includes(order.id)}
+                      onChange={() => onToggleSelectOrder(order.id)}
+                      className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600"
+                    />
+                  </td>
+                )}
                 <td className="whitespace-nowrap px-6 py-4 text-sm font-mono font-semibold text-slate-900">
                   <div className="flex items-center space-x-2">
                     <span>{order.id}</span>
@@ -163,7 +183,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
             ))}
             {orders.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-6 py-10 text-center text-sm text-slate-500">
+                <td colSpan={onToggleSelectOrder ? 7 : 6} className="px-6 py-10 text-center text-sm text-slate-500">
                   No orders found in fulfillment queue.
                 </td>
               </tr>

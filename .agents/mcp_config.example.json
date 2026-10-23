@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_GITHUB_PAT>"
+      }
+    }
+  },
+  "_github_issue_2_copy_paste_template": {
+    "issue_number": 2,
+    "title": "PRD: Phase 2 Bulk Order Cancellation & Atomic Inventory Restock",
+    "copy_paste_markdown": "## Summary\nWarehouse operations managers need a batch cancellation endpoint (`POST /api/orders/bulk-cancel`) and UI selection controls in **FulfillmentHub** to cancel multiple orders simultaneously and return allocated quantities back to `inventory.stock_count`.\n\n## Acceptance Criteria\n1. **All-or-Nothing Atomicity (`db.transaction()`):**\n   - Wrap the entire batch in a single SQLite `db.transaction()`.\n   - If ANY order ID in `orderIds` does not exist (`404 Not Found`) or has already shipped (`status = 'SHIPPED'`, e.g., `ORD-1003` -> `409 Conflict`), abort and roll back the entire batch with zero database mutations.\n2. **Inventory Restock (`PENDING` & `PROCESSING`):**\n   - For valid cancellable orders (`ORD-1001`, `ORD-1002`, `ORD-1004`, `ORD-1006`), update `orders.status = 'CANCELLED'` and increment `inventory.stock_count` by `order.quantity`.\n3. **Idempotent Retry Safety (`CANCELLED`):**\n   - If a batch includes an order already in `'CANCELLED'` status (e.g., `ORD-1005` for `SKU-5099`), treat it as an idempotent no-op (`200 OK`, `0` inventory restock delta) so network retries never manufacture phantom inventory.\n4. **Structured API Contract:**\n   - Success (`200 OK`): `{ cancelledIds: string[], restockedCount: number }`\n   - Failure (`400` / `404` / `409`): `{ error: string, code: string, failedOrderId?: string }`\n5. **Non-Goals:**\n   - Do not integrate external payment gateway refunds or customer email notifications in Phase 2."
+  }
+}

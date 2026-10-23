@@ -10,6 +10,7 @@ interface InventoryItem {
 export const App: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [filterExpeditedOnly, setFilterExpeditedOnly] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,12 +71,35 @@ export const App: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to cancel order ${orderId}`);
+        const body = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? `Failed to cancel order ${orderId}`);
       }
 
       await fetchData();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Order cancellation failed');
+    }
+  };
+
+  const handleBulkCancel = async () => {
+    if (selectedOrderIds.length === 0) return;
+
+    try {
+      const response = await fetch('/api/orders/bulk-cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderIds: selectedOrderIds }),
+      });
+
+      if (!response.ok) {
+        const body = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? 'Bulk cancellation failed');
+      }
+
+      setSelectedOrderIds([]);
+      await fetchData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Bulk cancellation failed');
     }
   };
 
@@ -227,6 +251,16 @@ export const App: React.FC = () => {
               </span>
             </button>
           </div>
+
+          {selectedOrderIds.length > 0 && (
+            <button
+              type="button"
+              onClick={() => void handleBulkCancel()}
+              className="inline-flex items-center rounded-lg bg-rose-600 px-4 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-rose-700 transition-colors"
+            >
+              Cancel Selected ({selectedOrderIds.length})
+            </button>
+          )}
         </div>
 
         {error && (
@@ -242,6 +276,14 @@ export const App: React.FC = () => {
         ) : (
           <OrderTable
             orders={displayedOrders}
+            selectedOrderIds={selectedOrderIds}
+            onToggleSelectOrder={(orderId) =>
+              setSelectedOrderIds((prev) =>
+                prev.includes(orderId)
+                  ? prev.filter((id) => id !== orderId)
+                  : [...prev, orderId]
+              )
+            }
             onStatusChange={handleStatusChange}
             onCancelOrder={handleCancelOrder}
           />
