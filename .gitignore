@@ -4,3 +4,4 @@ server/data/*.sqlite
 server/data/*.sqlite-*
 .DS_Store
 *.log
+.agents/mcp_config.json

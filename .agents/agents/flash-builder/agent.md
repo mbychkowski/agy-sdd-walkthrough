@@ -9,11 +9,8 @@ subagent: true
 mainAgent: false
 commandExecutionPolicy: auto
 tools:
-  - view_file
   - read_file
-  - replace_file_content
   - edit_file
-  - write_to_file
   - write_file
   - run_command
 ---

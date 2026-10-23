@@ -8,10 +8,7 @@ model: pro
 subagent: true
 mainAgent: false
 tools:
-  - view_file
   - read_file
-  - code_search
-  - grep_search
 ---
 
 # Adversarial Spec Critic Persona
