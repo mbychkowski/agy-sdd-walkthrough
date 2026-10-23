@@ -1,12 +1,14 @@
 {
-  "name": "order-pulse-server",
+  "name": "fulfillmenthub-server",
   "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:fast": "vitest run --no-file-parallelism --no-isolate",
+    "audit": "tsx src/audit.ts"
   },
   "dependencies": {
     "better-sqlite3": "^11.3.0",

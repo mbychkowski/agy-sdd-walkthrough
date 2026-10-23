@@ -9,12 +9,15 @@ export interface Order {
   product_name: string;
   quantity: number;
   status: OrderStatus;
+  is_expedited: number;
+  stock_count: number;
   created_at: string;
 }
 
 interface OrderTableProps {
   orders: Order[];
   onStatusChange: (orderId: string, newStatus: OrderStatus) => Promise<void>;
+  onCancelOrder: (orderId: string) => Promise<void>;
 }
 
 const STATUS_STYLES: Record<OrderStatus, string> = {
@@ -26,7 +29,11 @@ const STATUS_STYLES: Record<OrderStatus, string> = {
 
 const ALL_STATUSES: OrderStatus[] = ['PENDING', 'PROCESSING', 'SHIPPED', 'CANCELLED'];
 
-export const OrderTable: React.FC<OrderTableProps> = ({ orders, onStatusChange }) => {
+export const OrderTable: React.FC<OrderTableProps> = ({
+  orders,
+  onStatusChange,
+  onCancelOrder,
+}) => {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
       <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
@@ -79,7 +86,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({ orders, onStatusChange }
                 scope="col"
                 className="px-6 py-3.5 text-right text-xs font-semibold uppercase tracking-wider text-slate-500"
               >
-                Update Status
+                Actions
               </th>
             </tr>
           </thead>
@@ -87,7 +94,17 @@ export const OrderTable: React.FC<OrderTableProps> = ({ orders, onStatusChange }
             {orders.map((order) => (
               <tr key={order.id} className="hover:bg-slate-50/80 transition-colors">
                 <td className="whitespace-nowrap px-6 py-4 text-sm font-mono font-semibold text-slate-900">
-                  {order.id}
+                  <div className="flex items-center space-x-2">
+                    <span>{order.id}</span>
+                    {order.is_expedited === 1 && (
+                      <span
+                        title="Expedited Order"
+                        className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-900 border border-amber-300"
+                      >
+                        ⚡ Expedited
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-slate-800">
                   {order.customer_name}
@@ -95,7 +112,18 @@ export const OrderTable: React.FC<OrderTableProps> = ({ orders, onStatusChange }
                 <td className="px-6 py-4 text-sm text-slate-700">
                   <div className="flex flex-col">
                     <span className="font-medium text-slate-900">{order.product_name}</span>
-                    <span className="text-xs font-mono text-slate-500">{order.sku}</span>
+                    <div className="flex items-center space-x-2 mt-0.5">
+                      <span className="text-xs font-mono text-slate-500">{order.sku}</span>
+                      {order.stock_count < 5 ? (
+                        <span className="inline-flex items-center rounded bg-rose-50 px-1.5 py-0.5 text-[11px] font-medium text-rose-700 border border-rose-200">
+                          ⚠️ Low stock: {order.stock_count} left
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-slate-400">
+                          ({order.stock_count} in stock)
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </td>
                 <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-slate-700">
@@ -110,11 +138,11 @@ export const OrderTable: React.FC<OrderTableProps> = ({ orders, onStatusChange }
                     {order.status}
                   </span>
                 </td>
-                <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
+                <td className="whitespace-nowrap px-6 py-4 text-right text-sm space-x-2">
                   <select
                     aria-label={`Change status for ${order.id}`}
                     value={order.status}
-                    onChange={(e) => onStatusChange(order.id, e.target.value as OrderStatus)}
+                    onChange={(e) => void onStatusChange(order.id, e.target.value as OrderStatus)}
                     className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:border-slate-400 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20"
                   >
                     {ALL_STATUSES.map((status) => (
@@ -123,6 +151,13 @@ export const OrderTable: React.FC<OrderTableProps> = ({ orders, onStatusChange }
                       </option>
                     ))}
                   </select>
+                  <button
+                    type="button"
+                    onClick={() => void onCancelOrder(order.id)}
+                    className="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-100 transition-colors"
+                  >
+                    Cancel
+                  </button>
                 </td>
               </tr>
             ))}

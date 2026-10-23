@@ -26,28 +26,45 @@ export function initDb(): void {
       id TEXT PRIMARY KEY,
       customer_name TEXT NOT NULL,
       sku TEXT NOT NULL,
+      product_name TEXT NOT NULL,
       quantity INTEGER NOT NULL,
       status TEXT NOT NULL,
-      created_at TEXT NOT NULL,
+      is_expedited INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
       FOREIGN KEY (sku) REFERENCES inventory(sku)
     );
   `);
+
+  // Ensure schema and seed match the current workshop specification
+  const orderCols = db.prepare('PRAGMA table_info(orders)').all() as Array<{ name: string }>;
+  const hasProductName = orderCols.some((col) => col.name === 'product_name');
+  const hasSku1001 = db
+    .prepare('SELECT 1 FROM inventory WHERE sku = ?')
+    .get('SKU-1001') as { 1: number } | undefined;
+
+  if (!hasProductName) {
+    db.exec('DROP TABLE IF EXISTS orders; DROP TABLE IF EXISTS inventory;');
+    initDb();
+    return;
+  }
 
   const inventoryCount = db
     .prepare('SELECT COUNT(*) as count FROM inventory')
     .get() as { count: number };
 
-  if (inventoryCount.count === 0) {
+  if (inventoryCount.count === 0 || !hasSku1001) {
+    db.exec('DELETE FROM orders; DELETE FROM inventory;');
+
     const insertInventory = db.prepare(
       'INSERT INTO inventory (sku, product_name, stock_count) VALUES (?, ?, ?)'
     );
 
     const seedInventory = [
-      ['SKU-1049', 'Cashmere Crewneck Sweater', 4],
-      ['SKU-2088', 'Selvedge Denim Jacket', 42],
-      ['SKU-3012', 'Leather Chelsea Boots', 7],
-      ['SKU-4055', 'Linen Blazer', 85],
-      ['SKU-5099', 'Silk Evening Scarf', 2],
+      ['SKU-1001', 'Cashmere Crewneck Sweater', 15],
+      ['SKU-2040', 'Selvedge Denim Jacket', 12],
+      ['SKU-3010', 'Leather Chelsea Boots', 8],
+      ['SKU-4022', 'Linen Blazer', 20],
+      ['SKU-5099', 'Silk Evening Scarf', 3],
     ] as const;
 
     const seedTx = db.transaction(() => {
@@ -56,20 +73,20 @@ export function initDb(): void {
       }
 
       const insertOrder = db.prepare(
-        'INSERT INTO orders (id, customer_name, sku, quantity, status, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+        'INSERT INTO orders (id, customer_name, sku, product_name, quantity, status, is_expedited, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
       );
 
       const seedOrders = [
-        ['ORD-1001', 'Elena Vance', 'SKU-1049', 2, 'PENDING', '2026-10-20T09:15:00Z'],
-        ['ORD-1002', 'Marcus Sterling', 'SKU-2088', 1, 'PROCESSING', '2026-10-20T10:30:00Z'],
-        ['ORD-1003', 'Aria Montgomery', 'SKU-3012', 1, 'PENDING', '2026-10-20T11:45:00Z'],
-        ['ORD-1004', 'Julian Thorne', 'SKU-4055', 3, 'SHIPPED', '2026-10-19T16:20:00Z'],
-        ['ORD-1005', 'Sophia Chen', 'SKU-5099', 1, 'PENDING', '2026-10-20T13:10:00Z'],
-        ['ORD-1006', 'Devon Brooks', 'SKU-1049', 1, 'PROCESSING', '2026-10-20T14:05:00Z'],
+        ['ORD-1001', 'Alice Smith', 'SKU-1001', 'Cashmere Crewneck Sweater', 1, 'PENDING', 1, '2026-10-20T09:15:00Z'],
+        ['ORD-1002', 'Bob Jones', 'SKU-2040', 'Selvedge Denim Jacket', 2, 'PROCESSING', 0, '2026-10-20T10:30:00Z'],
+        ['ORD-1003', 'Charlie Brown', 'SKU-3010', 'Leather Chelsea Boots', 1, 'SHIPPED', 0, '2026-10-19T16:20:00Z'],
+        ['ORD-1004', 'Diana Prince', 'SKU-4022', 'Linen Blazer', 1, 'PENDING', 0, '2026-10-20T11:45:00Z'],
+        ['ORD-1005', 'Evan Wright', 'SKU-5099', 'Silk Evening Scarf', 2, 'CANCELLED', 0, '2026-10-19T14:10:00Z'],
+        ['ORD-1006', 'Fiona Gallagher', 'SKU-5099', 'Silk Evening Scarf', 1, 'PENDING', 1, '2026-10-20T13:10:00Z'],
       ] as const;
 
-      for (const [id, customerName, sku, quantity, status, createdAt] of seedOrders) {
-        insertOrder.run(id, customerName, sku, quantity, status, createdAt);
+      for (const [id, customerName, sku, productName, quantity, status, isExpedited, createdAt] of seedOrders) {
+        insertOrder.run(id, customerName, sku, productName, quantity, status, isExpedited, createdAt);
       }
     });
 
